@@ -31,6 +31,10 @@ export function Home() {
           <li>
             <strong>Take the quiz</strong> at the end of each module.
           </li>
+          <li>
+            <strong>Forgot a term?</strong> Look it up in the <Link to="/glossary">glossary</Link>. Every entry links back to the
+            module that teaches it.
+          </li>
         </ol>
       </section>
 

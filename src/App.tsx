@@ -13,6 +13,7 @@ const pages: Record<string, React.LazyExoticComponent<() => JSX.Element>> = {
   'short-rate': lazy(() => import('./pages/ShortRate')),
   lmm: lazy(() => import('./pages/Lmm')),
 };
+const Glossary = lazy(() => import('./pages/Glossary'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -53,6 +54,10 @@ export function App() {
                 {l.title}
               </NavLink>
             ))}
+            <NavLink to="/glossary" className="nav-extra" onClick={() => setMenuOpen(false)}>
+              <span className="nav-num">A–Z</span>
+              Glossary
+            </NavLink>
           </nav>
           <div className="sidebar-foot">Sample data is illustrative, not live market quotes.</div>
         </aside>
@@ -60,6 +65,7 @@ export function App() {
           <Suspense fallback={<div className="loading">Loading lesson…</div>}>
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/glossary" element={<Glossary />} />
               {lessons.map((l) => {
                 const Page = pages[l.id];
                 return <Route key={l.id} path={l.path} element={<Page />} />;

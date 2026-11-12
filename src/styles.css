@@ -138,6 +138,29 @@ table.data th { color: var(--muted); font-weight: 600; background: #fafbfc; }
 .lesson-footer { display: flex; justify-content: space-between; gap: 16px; margin-top: 32px; font-weight: 600; }
 .lesson-footer a { text-decoration: none; }
 
+/* ── Glossary ───────────────────────────────────────── */
+.nav a.nav-extra { margin-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.12); padding-top: 12px; border-radius: 0 0 6px 6px; }
+.nav-extra .nav-num { font-size: 8px; }
+.glossary-tools { display: flex; gap: 10px; flex-wrap: wrap; position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 12px 0; }
+.search { flex: 1; min-width: 220px; font: inherit; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.search:focus, .glossary-tools select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.glossary-tools select { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.letters { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.letters button { border: 1px solid var(--line); background: #fff; border-radius: 6px; width: 32px; height: 30px; cursor: pointer; font: inherit; font-weight: 600; color: var(--accent); }
+.letters button:hover { border-color: var(--accent); }
+.glossary-group h2 { color: var(--accent); border-bottom: 2px solid var(--accent-soft); padding-bottom: 4px; margin: 28px 0 12px; scroll-margin-top: 70px; }
+.term { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; margin-bottom: 10px; scroll-margin-top: 90px; transition: box-shadow 0.3s, border-color 0.3s; }
+.term.flash { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.term-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.term h3 { margin: 0; font-size: 17px; }
+.aka { font-size: 13px; color: var(--muted); }
+.term p { margin: 6px 0; }
+.term-formula { overflow-x: auto; padding: 4px 0 6px; }
+.term-foot { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.module-chip { font-size: 12.5px; background: var(--accent-soft); color: var(--accent); border-radius: 999px; padding: 3px 10px; text-decoration: none; font-weight: 600; }
+.related { font: inherit; font-size: 12.5px; background: none; border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; cursor: pointer; color: var(--muted); }
+.related:hover { border-color: var(--accent); color: var(--accent); }
+
 /* ── Home ───────────────────────────────────────────── */
 .hero p { font-size: 18px; color: var(--muted); max-width: 720px; }
 .how li + li { margin-top: 8px; }
