@@ -16,7 +16,11 @@ const pages: Record<string, React.LazyExoticComponent<() => JSX.Element>> = {
 
 function ScrollToTop() {
   const { pathname } = useLocation();
-  useEffect(() => window.scrollTo(0, 0), [pathname]);
+  // Braces matter: newer browsers return a value from scrollTo, and React would
+  // treat a returned value as a clean-up function and crash on the next page change.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
   return null;
 }
 
