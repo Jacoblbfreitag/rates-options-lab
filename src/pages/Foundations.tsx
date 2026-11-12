@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { Data } from 'plotly.js';
-import { Chart, line, linspace } from '../components/Chart';
+import { Chart, line, linspace, palette } from '../components/Chart';
 import { Playground, Slider, Stats, Toggle, num, pct } from '../components/Controls';
 import { Tex, TexBlock } from '../components/Formula';
 import { CodeRef, Example, InPlainWords, LessonFooter, LessonHeader, Note, Quiz, Section, Symbols, Takeaways, Term, TryThis } from '../components/Lesson';
@@ -28,9 +28,12 @@ export default function Foundations() {
     const xs = linspace(K * 0.5, K * 1.5, 201);
     return [
       line(xs, xs.map((s) => payoff(type, s, K)), 'Payoff at expiry', { line: { dash: 'dash', color: '#5f6b7a' } }),
-      line(xs, xs.map((s) => bsPrice(type, { ...inp, S: s })), `Value today (T = ${T.toFixed(2)}y)`),
-      line(xs, xs.map((s) => bsPrice(type, { ...inp, S: s, T: Math.max(T / 4, 0.01) })), `Value with T/4 left`, {
-        line: { dash: 'dot' },
+      // Colours are fixed because the lesson text refers to them ("the blue curve").
+      line(xs, xs.map((s) => bsPrice(type, { ...inp, S: s })), `Value today (T = ${T.toFixed(2)}y)`, {
+        line: { color: palette[0], width: 3 },
+      }),
+      line(xs, xs.map((s) => bsPrice(type, { ...inp, S: s, T: Math.max(T / 4, 0.01) })), `Value with only T/4 left`, {
+        line: { dash: 'dot', color: palette[2] },
       }),
       { x: [S], y: [price], name: 'Current spot', type: 'scatter', mode: 'markers', marker: { size: 10, color: '#c2453c' } } as Data,
     ];

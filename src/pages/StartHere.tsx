@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { Data } from 'plotly.js';
-import { Chart, line, linspace } from '../components/Chart';
+import { Chart, line, linspace, palette } from '../components/Chart';
 import { Playground, Slider, Stats, Toggle, num, pct } from '../components/Controls';
 import { Tex, TexBlock } from '../components/Formula';
 import { Example, InPlainWords, LessonFooter, LessonHeader, Note, Quiz, Section, Symbols, Takeaways, Term, TryThis } from '../components/Lesson';
@@ -43,9 +43,9 @@ export default function StartHere() {
   const capChart = useMemo(() => {
     const rates = linspace(0, 0.08, 161);
     return [
-      line(rates.map((r) => r * 100), rates.map((r) => (r * loan) / 1e3), 'Interest cost without a cap'),
+      line(rates.map((r) => r * 100), rates.map((r) => (r * loan) / 1e3), 'Interest cost without a cap', { line: { color: palette[0] } }),
       line(rates.map((r) => r * 100), rates.map((r) => ((Math.min(r, capStrike) + capCost) * loan) / 1e3), 'With a cap (incl. its cost)', {
-        line: { width: 3 },
+        line: { width: 3, color: palette[1] },
       }),
     ];
   }, [capStrike]);

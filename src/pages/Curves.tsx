@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Chart, line, linspace } from '../components/Chart';
+import { Chart, line, linspace, palette } from '../components/Chart';
 import { Playground, Slider, Stats, Toggle, bp, num, pct } from '../components/Controls';
 import { Tex, TexBlock } from '../components/Formula';
 import { CodeRef, Example, InPlainWords, LessonFooter, LessonHeader, Note, Quiz, Section, Symbols, Takeaways, Term, TryThis } from '../components/Lesson';
@@ -9,10 +9,10 @@ import { annuity, bootstrap, instrumentRate, parSwapRate, type Curve } from '../
 const grid = linspace(0.02, 30, 300);
 
 function curveTraces(curve: Curve, suffix = '', dash?: string) {
-  const style = dash ? { line: { dash } } : {};
+  // Fixed colours: the lesson text refers to "zero rates (blue)" and "forwards (orange)".
   return [
-    line(grid, grid.map((t) => curve.zero(t) * 100), `Zero rate${suffix}`, style),
-    line(grid, grid.map((t) => curve.fwd(t, t + 0.25) * 100), `3M forward${suffix}`, style),
+    line(grid, grid.map((t) => curve.zero(t) * 100), `Zero rate${suffix}`, { line: { dash, color: palette[0] } }),
+    line(grid, grid.map((t) => curve.fwd(t, t + 0.25) * 100), `3M forward${suffix}`, { line: { dash, color: palette[1] } }),
   ];
 }
 
