@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Tex } from '../components/Formula';
 import { glossary, type GlossaryEntry } from '../data/glossary';
 import { lessons } from '../lessons';
@@ -14,7 +14,9 @@ function matches(e: GlossaryEntry, q: string) {
 }
 
 export default function Glossary() {
-  const [query, setQuery] = useState('');
+  // A <Term> link in a lesson opens the glossary pre-searched for that term.
+  const location = useLocation();
+  const [query, setQuery] = useState<string>((location.state as { q?: string } | null)?.q ?? '');
   const [module, setModule] = useState('all');
   const q = query.trim().toLowerCase();
   const shown = useMemo(

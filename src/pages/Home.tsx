@@ -16,6 +16,10 @@ export function Home() {
         <h2>How to use this</h2>
         <ol className="how">
           <li>
+            <strong>New to options? Start with <Link to="/start">Module 0</Link>.</strong> It explains what an option is, present
+            value, and how to read the maths, assuming no prior knowledge.
+          </li>
+          <li>
             <strong>Go in order.</strong> Each module builds on the one before. Rate options are options on forwards
             (module 3–4), the smile breaks the single-vol assumption (5), and term-structure models tie everything
             together (6–7).

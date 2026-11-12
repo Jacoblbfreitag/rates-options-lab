@@ -3,7 +3,7 @@ import type { Data } from 'plotly.js';
 import { Chart, line, linspace } from '../components/Chart';
 import { Playground, Slider, Stats, Toggle, num, pct } from '../components/Controls';
 import { Tex, TexBlock } from '../components/Formula';
-import { CodeRef, LessonFooter, LessonHeader, Note, Quiz, Section, TryThis } from '../components/Lesson';
+import { CodeRef, InPlainWords, LessonFooter, LessonHeader, Note, Quiz, Section, Symbols, Takeaways, Term, TryThis } from '../components/Lesson';
 import { baseCurve } from '../data/curves';
 import { lmmCapletBlackVols } from '../data/market';
 import { abcdVol, calibrateAbcd, capletVolFromAbcd, correlation, lmmSetup, type Abcd, type LmmResult } from '../models/lmm';
@@ -123,34 +123,77 @@ export default function Lmm() {
       <LessonHeader id="lmm" />
 
       <Section title="1. Model the market’s rates directly">
-        <p>
-          Short-rate models describe one unobservable number and <em>derive</em> forward rates from it. The LIBOR Market Model
-          (BGM/Jamshidian, 1997) flips this around. It models the observable simple forward rates{' '}
-          <Tex>{String.raw`F_i(t) = F(t; T_i, T_{i+1})`}</Tex>, each lognormal with its own vol:
-        </p>
+        <InPlainWords>
+          <p>
+            Module 6 modelled one invisible number (the overnight rate) and <em>derived</em> everything else from it. The LIBOR
+            Market Model (LMM) takes the opposite approach. It directly models the rates the market actually trades: the{' '}
+            <Term name="Forward rate">forward rates</Term> for each future period (year 1–2, year 2–3, …).
+          </p>
+          <p>
+            Picture each forward rate as its own "share price" that wiggles randomly, as in Black–Scholes. There are ten of them
+            for a 10-year horizon, and they don't move independently: when the 3-year forward goes up, the 4-year forward
+            usually goes up too. So the model has two ingredients: <strong>a volatility for each forward</strong> and{' '}
+            <strong>a correlation between each pair</strong>.
+          </p>
+          <p style={{ marginBottom: 0 }}>
+            The payoff: since each forward behaves like a Black–Scholes asset, caplets come out <strong>exactly</strong> at
+            the Black-76 prices the market quotes (module 3). That is why it is called a "market" model. The name LIBOR is
+            historical; today the same model is used on SOFR forward rates.
+          </p>
+        </InPlainWords>
         <TexBlock>{String.raw`\frac{dF_i}{F_i} = \mu_i(t)\,dt + \sigma_i(t)\,dW_i, \qquad dW_i\,dW_j = \rho_{ij}\,dt`}</TexBlock>
+        <Symbols
+          items={[
+            ['F_i(t)', 'Forward rate i: the rate for the period from T_i to T_{i+1}, as seen at time t'],
+            [String.raw`dF_i / F_i`, 'The percentage change of that forward (lognormal, like a share price)'],
+            [String.raw`\sigma_i(t)`, 'Its volatility (section 2)'],
+            [String.raw`\rho_{ij}`, 'Correlation between the random shocks of forwards i and j (between −1 and 1)'],
+            [String.raw`\mu_i(t)`, 'A drift term, explained in the box below'],
+          ]}
+        />
         <p>
-          Under the <Tex>{String.raw`T_{i+1}`}</Tex>-forward measure, the one that discounts from the caplet's payment date,{' '}
-          <Tex>{'F_i'}</Tex> is a martingale with no drift. So the caplet price is <strong>exactly Black-76</strong> with vol{' '}
-          <Tex>{String.raw`\bar\sigma_i^2 = \frac{1}{T_i}\int_0^{T_i}\sigma_i(t)^2dt`}</Tex>. That is why the model is called a "market"
-          model: it is consistent with how the market already quotes caps.
+          For a single caplet the drift <Tex>{String.raw`\mu_i`}</Tex> can be made zero, so its price is exactly Black-76 with
+          the forward's average volatility <Tex>{String.raw`\bar\sigma_i^2 = \frac{1}{T_i}\int_0^{T_i}\sigma_i(t)^2dt`}</Tex>.
         </p>
-        <Note title="Why the drift appears">
-          Each forward is driftless only under <em>its own</em> measure. To simulate all of them together we need a single measure.
-          We use the <strong>spot LIBOR measure</strong> (roll a deposit from reset to reset), and in that measure every forward
-          picks up a drift from its correlation with the forwards before it:
+        <Note title="Why the drift appears (optional, a bit technical)">
+          <p>
+            Prices are always measured in some unit, the <Term name="Numeraire">numeraire</Term>, much like choosing a currency.
+            Measured in the "right" unit (a bond paying on the caplet's payment date), forward i has no drift, which is why its
+            caplet is plain Black-76. But each forward has a <em>different</em> right unit. To simulate all of them together in
+            one consistent world we must pick a single unit, just as you must convert everything to one currency before adding it up.
+          </p>
+          We use the <Term name="Spot measure">spot measure</Term> (the unit is a deposit rolled from period to period), and then
+          each forward needs a correction to its drift, which comes from its correlation with the forwards before it:
           <TexBlock>{String.raw`\mu_i(t) = \sigma_i(t) \sum_{j=q(t)}^{i} \frac{\tau\,\rho_{ij}\,\sigma_j(t)\,F_j(t)}{1 + \tau F_j(t)}`}</TexBlock>
-          The drift depends on the other forwards, so there is no closed form for most products. We use Monte Carlo.
-          (The LIBOR name is historical. The same model is used today on SOFR forward rates.)
+          The drift depends on the other forwards, so most products have no formula. We price them by simulation (section 3).
         </Note>
       </Section>
 
       <Section title="2. Volatility and correlation">
-        <p>
-          The standard parametrisation (Rebonato) makes the instantaneous vol a function of <em>time to reset</em>, so the vol
-          structure looks the same tomorrow as today ("time-homogeneous"):
-        </p>
+        <InPlainWords>
+          <p>
+            How volatile is each forward rate? Market caplet vols (the red dots below) show a typical <strong>hump</strong>:
+            rates about 1–3 years ahead are the most uncertain. Very short rates are pinned down by the central bank's current
+            policy, and very long ones are anchored by long-run expectations. The middle is where the market is most unsure what
+            the central bank will do.
+          </p>
+          <p style={{ marginBottom: 0 }}>
+            The <Term name="abcd volatility">abcd</Term> formula draws such a hump with four numbers. It makes a forward's vol
+            depend on <em>how long until it is fixed</em>, so the shape looks the same next year as today. That is a sensible,
+            stable assumption.
+          </p>
+        </InPlainWords>
         <TexBlock>{String.raw`\sigma_i(t) = \varphi(T_i - t), \qquad \varphi(x) = (a + b\,x)\,e^{-c\,x} + d, \qquad \rho_{ij} = e^{-\beta|T_i - T_j|}`}</TexBlock>
+        <Symbols
+          items={[
+            ['x = T_i - t', 'Time left until forward i is fixed'],
+            [String.raw`\varphi(x)`, 'Volatility of a forward that is x years from fixing'],
+            ['a + d', 'Vol just before fixing (x = 0)'],
+            ['b,\ c', 'Size and position of the hump: (a + bx) rises, e^{−cx} eventually pulls it down'],
+            ['d', 'Long-run vol for forwards far in the future'],
+            [String.raw`\beta`, 'Decorrelation: how quickly correlation falls as two forwards are further apart in time'],
+          ]}
+        />
         <Playground
           controls={
             <>
@@ -195,11 +238,26 @@ export default function Lmm() {
       </Section>
 
       <Section title="3. Monte Carlo">
-        <p>
-          The simulation steps all live forwards with a log-Euler scheme, so they stay positive. It uses correlated normals
-          from the Cholesky factor of <Tex>{String.raw`\rho`}</Tex>, rolls the spot numeraire{' '}
-          <Tex>{String.raw`B(T_{k+1}) = B(T_k)(1+\tau F_k(T_k))`}</Tex>, and discounts every payoff by it. It runs in a background
-          thread.
+        <InPlainWords>
+          <p>
+            Most LMM prices have no formula, so we use <Term name="Monte Carlo">Monte Carlo</Term> simulation, named after the
+            casino. The idea is the <strong>law of large numbers</strong>: to find an expected value, simulate many random
+            scenarios and average them.
+          </p>
+          <ol style={{ marginBottom: 0 }}>
+            <li>Generate one random future: move all the forward rates forward in small time steps, with correlated random shocks.</li>
+            <li>In that future, work out what the option pays and discount it to today.</li>
+            <li>Repeat 10,000 times or more and take the average. That is the price.</li>
+            <li>
+              The average is itself uncertain. Its <Term name="Standard error">standard error</Term> shrinks like 1/√(number of
+              paths), so 4× more paths halves the error.
+            </li>
+          </ol>
+        </InPlainWords>
+        <p className="muted">
+          Technical details: log-Euler time steps (forwards stay positive), correlated shocks via a{' '}
+          <Term name="Cholesky decomposition">Cholesky decomposition</Term>, and payoffs discounted with the rolled deposit{' '}
+          <Tex>{String.raw`B(T_{k+1}) = B(T_k)(1+\tau F_k(T_k))`}</Tex>. The simulation runs in a background thread.
         </p>
         <Playground
           controls={
@@ -254,10 +312,12 @@ export default function Lmm() {
       </Section>
 
       <Section title="4. Calibration in practice">
-        <p>
-          A full LMM calibration fits the vol function to caplets (as above) and the correlation to swaptions, typically using
-          Rebonato's formula:
-        </p>
+        <InPlainWords>
+          Calibrating the full model means: choose the vol hump (section 2) to match caplet prices, and the correlation to match
+          swaption prices. Simulating every candidate would be far too slow, so desks use a quick approximate formula for swaption
+          vols (Rebonato's). The swap rate is roughly a weighted average of the forward rates, so its variance is roughly the
+          variance of a weighted portfolio, the same formula as portfolio variance in finance class (Σ wᵢwⱼσᵢσⱼρᵢⱼ).
+        </InPlainWords>
         <TexBlock>{String.raw`\sigma_{\text{swpt}}^2\,T_e\,S_0^2 \approx \sum_{i,j} w_i w_j F_i F_j \rho_{ij} \int_0^{T_e}\sigma_i(t)\sigma_j(t)\,dt, \qquad w_i = \frac{\tau P(0,T_{i+1})}{A_0}`}</TexBlock>
         <p>
           With the model calibrated, you can price what the market does not quote: Bermudans (with Longstaff–Schwartz regression
@@ -265,6 +325,16 @@ export default function Lmm() {
           SABR-LMM extensions so the model also fits the smile from module 5.
         </p>
       </Section>
+
+      <Takeaways
+        items={[
+          'The LMM models the forward rates directly: each one moves like a Black–Scholes share price, with its own volatility, and they are correlated.',
+          'Caplets come out exactly at the market’s Black-76 prices, hence the name “market model”.',
+          'To simulate all forwards together they need drift corrections (a change of numeraire), so most prices require Monte Carlo.',
+          'Monte Carlo = simulate many random futures, average the discounted payoffs. Error shrinks like 1/√paths.',
+          'Caplets depend only on each forward’s vol. Swaptions also depend on correlation, roughly like the variance of a portfolio.',
+        ]}
+      />
 
       <Quiz
         questions={[

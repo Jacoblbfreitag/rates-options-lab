@@ -8,6 +8,7 @@ An interactive course on **interest rate options**, built as a React web app: fr
 
 | # | Module | What you build and explore |
 |---|--------|----------------------------|
+| 0 | Start here: the basics | What an option is, buyer vs seller, hedging vs speculation, present value, reading the maths |
 | 1 | Options foundations | Payoffs, Black–Scholes, Greeks (2D + 3D surfaces), put–call parity |
 | 2 | Yield curves | Discount factors, zero/forward rates, live bootstrapping from SOFR quotes, curve shifts |
 | 3 | Caps & floors | Caplet strips, Black-76 vs Bachelier, cap–floor parity, caplet vol stripping |
@@ -16,7 +17,7 @@ An interactive course on **interest rate options**, built as a React web app: fr
 | 6 | Short-rate models | Vasicek, Hull–White, trinomial tree visualiser, Bermudan swaptions |
 | 7 | LIBOR Market Model | abcd vol & correlation, calibration, Monte Carlo in a Web Worker, Rebonato's formula |
 
-Each module follows the same pattern: intuition → formula → interactive chart → "Try this" exercises → quiz.
+Each module follows the same pattern: an "In plain words" explanation → a worked example with real numbers → the formula with a "what each symbol means" table → interactive charts → "Try this" exercises → key takeaways → quiz. It is written for someone meeting options for the first time (e.g. an economics student). Terms with a dotted underline show their definition on hover, and a searchable **glossary** collects them all.
 
 ## Running it locally
 

@@ -88,6 +88,30 @@ h3 { font-size: 17px; margin: 20px 0 8px; }
 .try { background: var(--try); border-color: var(--try-line); }
 .code { background: var(--code); border-color: var(--code-line); }
 
+.plain { background: #f3f0fb; border-color: #7a5bbf; font-size: 15.5px; }
+.example { background: #f6f7f9; border-color: #5f6b7a; }
+.example table { border-collapse: collapse; margin: 6px 0; font-variant-numeric: tabular-nums; }
+.example td, .example th { padding: 3px 12px 3px 0; text-align: left; }
+.example th { color: var(--muted); font-weight: 600; font-size: 13px; }
+.symbols { margin: 4px 0 16px; font-size: 14.5px; }
+.symbols summary { cursor: pointer; color: var(--accent); font-weight: 600; font-size: 13px; }
+.symbols table { border-collapse: collapse; margin-top: 6px; }
+.symbols td { padding: 4px 14px 4px 0; vertical-align: top; border-bottom: 1px solid var(--line); }
+.symbols td.sym { white-space: nowrap; min-width: 70px; }
+.takeaways { background: #eef7f2; border-color: #cfe8db; }
+.takeaways li + li { margin-top: 6px; }
+
+/* Glossary term with hover tooltip */
+.term-link { position: relative; border-bottom: 1px dotted var(--accent); cursor: help; }
+.term-tip {
+  display: none; position: absolute; left: 0; top: calc(100% + 6px); z-index: 20; width: min(320px, 80vw);
+  background: var(--sidebar); color: #e8eef6; font-size: 13px; line-height: 1.45; font-weight: 400;
+  padding: 10px 12px; border-radius: 8px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+.term-tip strong { display: block; color: #fff; margin-bottom: 2px; }
+.tip-right .term-tip { left: auto; right: 0; }
+.term-link:hover .term-tip, .term-link:focus .term-tip { display: block; }
+
 /* ── Controls ───────────────────────────────────────── */
 .playground { display: grid; grid-template-columns: 280px 1fr; gap: 24px; margin: 16px 0; }
 @media (max-width: 1000px) { .playground { grid-template-columns: 1fr; } }

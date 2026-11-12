@@ -2,11 +2,11 @@ import { useMemo, useState } from 'react';
 import type { Data } from 'plotly.js';
 import { Chart, line, linspace } from '../components/Chart';
 import { Playground, Slider, Stats, Toggle, bp, num, pct } from '../components/Controls';
-import { Tex, TexBlock } from '../components/Formula';
-import { CodeRef, LessonFooter, LessonHeader, Note, Quiz, Section, TryThis } from '../components/Lesson';
+import { TexBlock } from '../components/Formula';
+import { CodeRef, Example, InPlainWords, LessonFooter, LessonHeader, Note, Quiz, Section, Symbols, Takeaways, Term, TryThis } from '../components/Lesson';
 import { baseCurve } from '../data/curves';
 import { capFlatNormalVols } from '../data/market';
-import { bachelier, black76, impliedNormalVol, type VolModel } from '../models/black76';
+import { bachelier, black76, forwardOption, impliedNormalVol, type VolModel } from '../models/black76';
 import { atmCapStrike, capPrice, capSwapValue, stripCapletVols, type CapType } from '../models/capfloor';
 
 export default function CapsFloors() {
@@ -26,6 +26,15 @@ export default function CapsFloors() {
   );
   const swap = capSwapValue(baseCurve, maturity, strike);
   const atm = atmCapStrike(baseCurve, maturity);
+
+  // A single caplet for the worked example: €10m, fixing in 2Y, paid at 2.25Y.
+  const ex = useMemo(() => {
+    const N = 10_000_000;
+    const F0 = baseCurve.fwd(2, 2.25);
+    const df = baseCurve.df(2.25);
+    const price = forwardOption(model, capType === 'cap' ? 'call' : 'put', F0, strike, 2, vol, N * 0.25 * df);
+    return { N, F0, df, price };
+  }, [model, capType, strike, vol]);
 
   const stripChart: Data[] = [
     {
@@ -87,16 +96,53 @@ export default function CapsFloors() {
       <LessonHeader id="caps" />
 
       <Section title="1. A cap is a strip of caplets">
+        <InPlainWords>
+          <p>
+            Remember the company from module 0 with a €10m floating-rate loan. Every three months its interest rate is reset
+            to the market rate (SOFR) for the next quarter. A <Term name="Cap">cap</Term> at 3.5% is a promise: whenever a
+            quarterly rate is set above 3.5%, the cap pays the company the difference for that quarter. The company never
+            effectively pays more than 3.5%.
+          </p>
+          <p style={{ marginBottom: 0 }}>
+            Each quarter is a separate little insurance contract, called a <Term name="Caplet">caplet</Term>. A 5-year cap
+            on quarterly payments is a bundle of 19 caplets (the first quarter's rate is already known today, so there is
+            nothing to insure). To price the cap, price each caplet and add them up.
+          </p>
+        </InPlainWords>
         <p>
-          A <strong>cap</strong> protects a floating-rate borrower: every period, if the rate fixes above the strike, the cap
-          pays the difference. Each period is a separate option, a <strong>caplet</strong>. Caplet <Tex>i</Tex> fixes at{' '}
-          <Tex>{'t_i'}</Tex> and pays at <Tex>{String.raw`t_{i+1}=t_i+\tau`}</Tex>:
+          What does a caplet look like as an option? Its payoff depends on the interest rate that will be set for one future
+          quarter. Today we don't know that rate, but we do know the <Term name="Forward rate">forward rate</Term> for that quarter
+          (module 2). So a caplet is simply a <strong>call option on a forward rate</strong>, and we can price it with a
+          Black–Scholes-type formula applied to the forward rate:
         </p>
         <TexBlock>{String.raw`\text{payoff}_i = N\,\tau\,\max(F_i(t_i) - K, 0) \quad\Longrightarrow\quad \text{Caplet}_i = N\,\tau\,P(0,t_{i+1})\;\text{Black}(F_i(0), K, t_i, \sigma_i)`}</TexBlock>
+        <Symbols
+          items={[
+            ['N', 'Notional: the loan amount the interest is calculated on (e.g. €10m)'],
+            [String.raw`\tau`, 'Length of the period in years: 0.25 for a quarter'],
+            [String.raw`t_i,\ t_{i+1}`, 'When the rate is set (the caplet’s expiry) and when the interest is paid (one quarter later)'],
+            [String.raw`F_i(t_i)`, 'The rate that will actually be set at t_i (unknown today)'],
+            [String.raw`F_i(0)`, 'Today’s forward rate for that quarter: our best market estimate of it'],
+            [String.raw`P(0,t_{i+1})`, 'Discount factor: the payment happens at t_{i+1}, so we discount from there'],
+            [String.raw`\sigma_i`, 'Volatility of that forward rate'],
+            [String.raw`\text{Black}(\cdot)`, 'The option formula on a forward: Black-76 or Bachelier (section 2)'],
+          ]}
+        />
+        <Example title={`Worked example: one ${capType === 'cap' ? 'caplet' : 'floorlet'} on €10m (uses the controls below)`}>
+          <p>
+            Take the quarter from year 2 to year 2.25. Today's forward rate for it is <strong>{pct(ex.F0, 3)}</strong> and the strike is{' '}
+            <strong>{pct(strike, 2)}</strong>. If in two years the rate is actually set at{' '}
+            {pct(capType === 'cap' ? strike + 0.01 : strike - 0.01, 2)} (1% {capType === 'cap' ? 'above' : 'below'} the strike), the{' '}
+            {capType === 'cap' ? 'caplet' : 'floorlet'} pays €10m × 0.25 × 1% = <strong>€25,000</strong>.
+          </p>
+          <p style={{ marginBottom: 0 }}>
+            Its fair price today = €10m × 0.25 × discount factor {num(ex.df, 4)} × the option value per unit of rate ={' '}
+            <strong>€{num(ex.price, 0)}</strong>. The bar chart below shows this calculation repeated for every quarter of the cap.
+          </p>
+        </Example>
         <p>
-          So a caplet is simply a call on a forward rate, priced with the forward-option formulas, discounted from the payment
-          date and scaled by the accrual <Tex>{String.raw`\tau`}</Tex>. A <strong>floor</strong> is the same strip of puts and
-          protects an investor in floating-rate assets.
+          A <Term name="Floor">floor</Term> is the mirror image: a bundle of puts on forward rates. It protects a lender (or an investor
+          in floating-rate bonds) against rates falling below the strike.
         </p>
         <Playground
           controls={
@@ -140,12 +186,38 @@ export default function CapsFloors() {
       </Section>
 
       <Section title="2. Black-76 or Bachelier?">
-        <p>
-          Until about 2015 caps were quoted in <strong>Black (lognormal) vols</strong>. Rates near zero broke this: a lognormal
-          rate can never go negative, and the Black vol of a low-strike option explodes. The market switched to{' '}
-          <strong>normal (Bachelier) vols</strong>, quoted in bp per year, which handle negative rates naturally.
-        </p>
+        <InPlainWords>
+          <p>To price an option on a rate we must say how the rate moves randomly. There are two standard assumptions:</p>
+          <ul>
+            <li>
+              <Term name="Black-76">Black-76</Term> (lognormal): rates move in <strong>percentages</strong> of their level, like share
+              prices in Black–Scholes. A 20% vol means a 4% rate typically moves ±0.8% in a year, but a 1% rate only ±0.2%.
+              A rate can then never fall below zero.
+            </li>
+            <li>
+              <Term name="Bachelier model">Bachelier</Term> (normal): rates move by a fixed number of{' '}
+              <Term name="Basis point (bp)">basis points</Term>, whatever their level. A vol of 100bp means a typical move of
+              ±1% a year, whether the rate is 4% or 0.5%. The rate <em>can</em> go negative.
+            </li>
+          </ul>
+          <p style={{ marginBottom: 0 }}>
+            From 2014 to 2022 euro and yen rates were <em>negative</em>, which the lognormal model cannot handle at all. The market therefore
+            switched to quoting rate vols as <Term name="Normal volatility">normal vols</Term> in bp, and that is today's standard.
+          </p>
+        </InPlainWords>
         <TexBlock>{String.raw`\text{Bachelier: } (F-K)N(d) + \sigma_N\sqrt{T}\,n(d), \quad d=\frac{F-K}{\sigma_N\sqrt T}; \qquad \sigma_N \approx \sigma_B \cdot F \text{ at the money}`}</TexBlock>
+        <Symbols
+          items={[
+            [String.raw`\sigma_N`, 'Normal vol: typical yearly move of the rate in absolute terms (100bp = 1% = 0.01)'],
+            [String.raw`\sigma_B`, 'Black (lognormal) vol: typical yearly move as a percentage of the rate level'],
+            ['n(d)', 'The height of the bell curve at d (N is the area, n is the height)'],
+            ['d', 'How many standard deviations the forward is above the strike'],
+          ]}
+        />
+        <p>
+          The left chart prices a call on a rate with both models, using vols that agree at the money. The right chart converts
+          the Black prices into normal vols, so it shows what the lognormal model "believes" in bp terms.
+        </p>
         <Playground
           controls={
             <>
@@ -178,10 +250,11 @@ export default function CapsFloors() {
       </Section>
 
       <Section title="3. Cap–floor parity">
-        <p>
-          A long cap plus a short floor at the same strike pays <Tex>{String.raw`\tau(F_i - K)`}</Tex> every period: a payer swap.
-          This holds for any model:
-        </p>
+        <InPlainWords>
+          This is put–call parity from module 1, in interest-rate form. Buy a cap and sell a floor at the same strike, say 3.5%.
+          If the rate is set at 5%, the cap pays you 1.5%. If it is set at 2%, you pay the floor buyer 1.5%. Either way you
+          receive "rate − 3.5%" every quarter. That is exactly a swap where you pay a fixed 3.5% and receive the floating rate.
+        </InPlainWords>
         <TexBlock>{String.raw`\text{Cap}(K) - \text{Floor}(K) = \text{Payer swap}(K) = \sum_i \tau\, P(0,t_{i+1})\,(F_i - K)`}</TexBlock>
         <Stats
           items={[
@@ -190,18 +263,32 @@ export default function CapsFloors() {
           ]}
         />
         <p>
-          It follows that the <strong>ATM strike</strong> (cap = floor) is the forward swap rate over the caplet dates. Markets
-          quote ATM caps as straddles (cap + floor) because a straddle has almost no delta, which makes it a pure vol trade.
+          A consequence: when the strike equals the swap rate for the same dates, the swap is worth zero, so cap = floor. That
+          strike is called the <Term name="At the money (ATM)">at-the-money</Term> (ATM) strike. Markets quote ATM caps as{' '}
+          <Term name="Straddle">straddles</Term> (cap + floor). A straddle gains whichever way rates move, so it is a pure bet
+          on <em>how much</em> rates will move, not on their direction.
         </p>
       </Section>
 
       <Section title="4. Stripping caplet vols">
-        <p>
-          The market quotes one <strong>flat vol</strong> per cap maturity: the single vol which, applied to every caplet,
-          gives the cap's price. Flat vols are averages, though. To price anything else you need the vol of each individual
-          caplet, the <strong>spot vol</strong>. We bootstrap them just like the curve: the 1Y cap gives the first caplets' vol;
-          the 2Y cap minus those known caplets gives the 1Y–2Y caplets; and so on.
-        </p>
+        <InPlainWords>
+          <p>
+            Brokers quote each cap with one number, its <Term name="Flat vol">flat vol</Term>: the single volatility that, used
+            for every caplet in the cap, gives the cap's market price. But the caplets in a 5-year cap don't really all have the
+            same volatility. The flat vol is a kind of <em>average</em>.
+          </p>
+          <p style={{ marginBottom: 0 }}>
+            To price anything other than these exact caps, we need each caplet's own vol, its{' '}
+            <Term name="Spot vol">spot vol</Term>. We recover them exactly as we bootstrapped the curve in module 2. The 1Y cap
+            gives the vol of the caplets in year 1. The 2Y cap price minus those (now known) caplets gives the vol of the year-2
+            caplets. And so on.
+          </p>
+        </InPlainWords>
+        <Example title="Worked example: averages and their parts">
+          Two exams: your average after exam 1 is 6.0, and after exam 2 it is 7.0. What did you get on exam 2? To lift the average
+          from 6 to 7, exam 2 must have been <strong>8</strong>, more extreme than either average. Caplet stripping is the same
+          calculation with option prices, and that is why the spot vols (blue staircase) swing more than the flat vols (grey).
+        </Example>
         <Playground
           controls={
             <>
@@ -234,6 +321,16 @@ export default function CapsFloors() {
         </Note>
         <CodeRef file="src/models/capfloor.ts">See stripCapletVols().</CodeRef>
       </Section>
+
+      <Takeaways
+        items={[
+          'A cap is insurance for a borrower against high rates. It is a bundle of caplets, one for each interest period. A floor is the same for a lender against low rates.',
+          'Each caplet is a call option on a forward rate: price it with Black-76 or Bachelier on the forward, discount from the payment date, and multiply by notional × period length.',
+          'Black-76 assumes rates move in percentages (no negative rates). Bachelier assumes they move in basis points (negative rates allowed). Today the market quotes normal (bp) vols.',
+          'Cap − floor = swap. At the ATM strike the cap and floor cost the same.',
+          'Flat vols are averages over a cap’s caplets. Stripping recovers each caplet’s own (spot) vol, one maturity at a time.',
+        ]}
+      />
 
       <Quiz
         questions={[

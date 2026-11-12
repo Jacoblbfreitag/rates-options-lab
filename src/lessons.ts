@@ -10,6 +10,20 @@ export interface LessonInfo {
 
 export const lessons: LessonInfo[] = [
   {
+    id: 'start',
+    number: 0,
+    path: '/start',
+    title: 'Start here: the basics',
+    summary: 'What an option is, why people buy them, why money later is worth less than money now, and how to read the maths.',
+    goals: [
+      'Explain what an option is, in your own words, and who is on each side',
+      'Work out an option’s profit or loss at expiry',
+      'Discount a future payment to today',
+      'Say why companies and investors buy interest rate options',
+      'Read the symbols used in the rest of the course (σ, N(x), e, ln …)',
+    ],
+  },
+  {
     id: 'foundations',
     number: 1,
     path: '/foundations',

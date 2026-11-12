@@ -15,6 +15,90 @@ export interface GlossaryEntry {
 }
 
 export const glossary: GlossaryEntry[] = [
+  // ── Start here ──
+  {
+    term: 'Option',
+    aka: ['Derivative'],
+    definition: 'A contract giving its buyer the RIGHT, but not the obligation, to buy or sell something at a fixed price on (or before) a future date. The buyer pays a premium for this right.',
+    module: 'start',
+    related: ['Call option', 'Put option', 'Premium'],
+  },
+  {
+    term: 'Premium',
+    aka: ['Option price'],
+    definition: 'The price the buyer pays the seller up front for an option — like an insurance premium. It is the most the buyer can lose.',
+    module: 'start',
+    related: ['Option', 'Writer'],
+  },
+  {
+    term: 'Writer',
+    aka: ['Option seller', 'Short the option'],
+    definition: 'The party that sells an option: receives the premium today and must pay out if the option is exercised. The writer’s gain is exactly the buyer’s loss, and vice versa.',
+    module: 'start',
+    related: ['Premium', 'Option'],
+  },
+  {
+    term: 'Expiry',
+    aka: ['Maturity', 'Expiration', 'T'],
+    definition: 'The date on which the option can be exercised (for a European option) and after which it ceases to exist. T is the time until expiry, in years.',
+    module: 'start',
+    related: ['European option', 'Time value'],
+  },
+  {
+    term: 'Hedging',
+    definition: 'Using a contract to reduce a risk you already have — e.g. a borrower with a floating-rate loan buying a cap so their interest cost cannot exceed a ceiling.',
+    module: 'start',
+    related: ['Cap', 'Speculation', 'Delta hedging'],
+  },
+  {
+    term: 'Speculation',
+    definition: 'Taking a position to profit from a view on the market. Options are popular for this because of leverage: a small premium gives exposure to a large notional.',
+    module: 'start',
+    related: ['Hedging', 'Leverage'],
+  },
+  {
+    term: 'Leverage',
+    definition: 'Getting a large exposure for a small outlay. A call costing 5 on a stock worth 100 can double in value on a 5% move in the stock.',
+    module: 'start',
+    related: ['Speculation', 'Premium'],
+  },
+  {
+    term: 'Notional',
+    aka: ['Principal', 'N'],
+    definition: 'The amount a rates contract’s payments are calculated on (e.g. €10m). For swaps and caps the notional itself is usually never exchanged.',
+    module: 'start',
+    related: ['Interest rate swap', 'Cap'],
+  },
+  {
+    term: 'Present value',
+    aka: ['PV', 'Discounting'],
+    definition: 'What a future payment is worth today. Money today can earn interest, so €100 in a year is worth less than €100 now: PV = 100 / (1 + r).',
+    formula: String.raw`PV = \frac{X}{(1+r)^T}`,
+    module: 'start',
+    related: ['Discount factor', 'Zero rate'],
+  },
+  {
+    term: 'Bond',
+    aka: ['Zero-coupon bond'],
+    definition: 'A loan in tradable form: you pay a price today and receive fixed payments later. When interest rates rise, the present value of those payments — the bond price — falls.',
+    module: 'start',
+    related: ['Discount factor', 'Present value'],
+  },
+  {
+    term: 'Normal distribution',
+    aka: ['Bell curve', 'N(x)'],
+    definition: 'The bell-shaped probability distribution. N(x) is the probability that a standard normal variable is below x (e.g. N(0) = 50%, N(1.96) ≈ 97.5%). It appears in every option formula in this course.',
+    formula: String.raw`N(x) = \Pr(Z \le x)`,
+    module: 'start',
+    related: ['Black–Scholes', 'Volatility'],
+  },
+  {
+    term: 'Expected value',
+    definition: 'The probability-weighted average of possible outcomes. An option’s price is the (risk-neutral) expected value of its payoff, discounted to today.',
+    module: 'start',
+    related: ['Risk-neutral measure', 'Monte Carlo'],
+  },
+
   // ── Options foundations ──
   {
     term: 'Call option',

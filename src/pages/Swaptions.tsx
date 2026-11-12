@@ -3,7 +3,7 @@ import type { Data } from 'plotly.js';
 import { Chart, line, linspace } from '../components/Chart';
 import { Playground, Slider, Stats, Toggle, bp, num, pct } from '../components/Controls';
 import { Tex, TexBlock } from '../components/Formula';
-import { CodeRef, LessonFooter, LessonHeader, Note, Quiz, Section, TryThis } from '../components/Lesson';
+import { CodeRef, Example, InPlainWords, LessonFooter, LessonHeader, Note, Quiz, Section, Symbols, Takeaways, Term, TryThis } from '../components/Lesson';
 import { baseCurve } from '../data/curves';
 import { swaptionExpiries, swaptionExpiryLabels, swaptionNormalVolsBp, swaptionTenorLabels, swaptionTenors } from '../data/market';
 import { forwardOption, type VolModel } from '../models/black76';
@@ -76,38 +76,88 @@ export default function Swaptions() {
     <article>
       <LessonHeader id="swaptions" />
 
-      <Section title="1. The forward swap rate and the annuity">
+      <Section title="1. What is a swaption?">
+        <InPlainWords>
+          <p>
+            Think of a mortgage. You are buying a house next year and are worried that mortgage rates will rise before then. You
+            would love the <em>right</em>, but not the obligation, to lock in today's rate for a 5-year fixed mortgage that starts
+            next year. If rates go up, you use the right. If they go down, you ignore it and take the cheaper market rate.
+          </p>
+          <p style={{ marginBottom: 0 }}>
+            A <Term name="Swaption">swaption</Term> is exactly that, for an <Term name="Interest rate swap">interest rate swap</Term>.
+            A "1Y × 5Y" (say "1 year into 5 years") swaption can be exercised in 1 year and gives a 5-year swap at a fixed rate{' '}
+            <Tex>K</Tex> agreed today. A <Term name="Payer swaption">payer swaption</Term> lets you <em>pay</em> fixed: it
+            protects borrowers and gains when rates rise. A <Term name="Receiver swaption">receiver swaption</Term> lets you{' '}
+            <em>receive</em> fixed: it protects investors and gains when rates fall.
+          </p>
+        </InPlainWords>
+        <h3>The two ingredients: the forward swap rate and the annuity</h3>
         <p>
-          A <strong>T<sub>e</sub> × n swaption</strong> (for example "1Y into 5Y") is the right, at expiry{' '}
-          <Tex>{'T_e'}</Tex>, to enter an n-year swap at fixed rate <Tex>K</Tex>. What it depends on is the{' '}
-          <strong>forward swap rate</strong>, the par rate of that forward-starting swap seen from today:
+          A caplet is an option on one forward rate. A swaption is an option on the{' '}
+          <Term name="Forward swap rate">forward swap rate</Term> <Tex>{'S_0'}</Tex>: the fixed rate that would make the future
+          swap fair, as seen from today. You can think of it as the market's "fair price" for that future swap. The{' '}
+          <Term name="Annuity">annuity</Term> <Tex>{'A_0'}</Tex> from module 2 converts a rate difference into money: it is the value
+          today of receiving €1 every year of the swap.
         </p>
         <TexBlock>{String.raw`S_0 = \frac{P(0,T_e) - P(0,T_e+n)}{A_0}, \qquad A_0 = \sum_{j=1}^{n} \tau_j\,P(0,t_j)`}</TexBlock>
+        <Symbols
+          items={[
+            ['T_e', 'Expiry of the option = start date of the swap'],
+            ['n', 'Length (tenor) of the underlying swap in years'],
+            ['S_0', 'Forward swap rate: the fair fixed rate for that future swap, seen today'],
+            ['A_0', 'Annuity: value today of €1 paid on each of the swap’s yearly payment dates t_j'],
+            ['P(0,t)', 'Discount factors from the yield curve (module 2)'],
+          ]}
+        />
         <div className="grid-2">
           <div>
             <Stats
               items={[
                 { label: `${expiry}Y × ${tenor}Y forward swap rate`, value: pct(S0, 3) },
-                { label: 'Annuity A₀', value: num(A, 4), hint: 'PV of 1 per year on the fixed leg' },
+                { label: 'Annuity A₀', value: num(A, 4), hint: `€1 a year for ${tenor} years, starting in ${expiry}Y` },
               ]}
             />
             <p className="muted">
-              Use the expiry and tenor sliders in section 2. The forward swap rate is an average of the forward rates over the
-              swap's life, weighted by the discount factors.
+              Change the expiry and tenor with the sliders in section 2. The annuity is a bit below the number of years, because
+              later payments are discounted more.
             </p>
           </div>
           <Chart data={fwdChart} x="Swap start / expiry (years)" y="Forward swap rate (%)" height={300} />
         </div>
       </Section>
 
-      <Section title="2. Pricing: the annuity measure">
-        <p>
-          At expiry a payer swaption is worth <Tex>{String.raw`A(T_e)\,\max(S(T_e)-K,0)`}</Tex>: the swap-rate difference paid
-          every year, worth the annuity. The trick is to use the annuity as the <strong>numeraire</strong>. Under that measure
-          the swap rate <Tex>S</Tex> is a martingale, so the Black or Bachelier formula applies directly, with <Tex>{'A_0'}</Tex>{' '}
-          in place of the discount factor:
-        </p>
+      <Section title="2. Pricing a swaption">
+        <InPlainWords>
+          <p>
+            Suppose you hold a payer swaption with strike 3.5%, and at expiry the 5-year swap rate is 4.5%. You exercise and pay
+            3.5% instead of the market's 4.5%, saving 1% a year for 5 years. That saving is worth{' '}
+            <strong>1% × annuity × notional</strong>. If the swap rate ends below 3.5%, you don't exercise and get nothing.
+          </p>
+          <p style={{ marginBottom: 0 }}>
+            So the swaption pays <em>annuity × max(swap rate − K, 0)</em>. That is a call option on the swap rate, multiplied by the
+            annuity. And just as with caplets, we price it with Black-76 or Bachelier on the forward swap rate, using the annuity in
+            place of the discount factor.
+          </p>
+        </InPlainWords>
         <TexBlock>{String.raw`\text{Payer} = A_0\,\text{Black}(S_0, K, T_e, \sigma), \qquad \text{Receiver} = A_0\,\text{Black}_{\text{put}}(S_0, K, T_e, \sigma)`}</TexBlock>
+        <Symbols
+          items={[
+            ['K', 'Strike: the fixed rate you get the right to pay (payer) or receive (receiver)'],
+            [String.raw`\sigma`, 'Volatility of the swap rate (normal vol in bp, or Black vol in %)'],
+            [String.raw`\text{Black}(\cdot)`, 'The forward-option formula from module 3 (Black-76 or Bachelier)'],
+            ['A_0', 'Annuity: takes the place of the discount factor, because the payoff is received every year of the swap'],
+          ]}
+        />
+        <Example title={`Worked example: a ${expiry}Y × ${tenor}Y ${type} swaption on €10m (uses the controls below)`}>
+          <table>
+            <tbody>
+              <tr><td>Forward swap rate today</td><td>{pct(S0, 3)}</td></tr>
+              <tr><td>Strike</td><td>{pct(K, 3)}</td></tr>
+              <tr><td>If the swap rate ends 1% {type === 'payer' ? 'above' : 'below'} the strike, the option is worth</td><td>1% × annuity {num(A, 3)} × €10m ≈ €{num(0.01 * A * 1e7, 0)}</td></tr>
+              <tr><td><strong>Fair price today</strong></td><td><strong>€{num(price * 1e7, 0)}</strong> ({num(price * 1e4, 1)}bp of notional)</td></tr>
+            </tbody>
+          </table>
+        </Example>
         <Playground
           controls={
             <>
@@ -151,10 +201,12 @@ export default function Swaptions() {
       </Section>
 
       <Section title="3. The ATM swaption vol grid">
-        <p>
-          The market quotes ATM normal vols on a grid of <strong>expiry × tenor</strong>. It is the most important input for
-          rates exotics desks, since every term-structure model in modules 6–7 is calibrated to (parts of) it.
-        </p>
+        <InPlainWords>
+          Brokers quote swaption prices as <Term name="Implied volatility">implied normal vols</Term>, in bp per year: the vol that
+          makes the formula above reproduce the market price. There is one quote for each combination of option expiry (rows)
+          and swap length (columns). Read a cell as "the market expects this swap rate to move about this many bp per year". The
+          table is like a weather map of how uncertain the market is about rates over different horizons.
+        </InPlainWords>
         <Toggle
           value={gridView}
           onChange={setGridView}
@@ -193,6 +245,16 @@ export default function Swaptions() {
           </ul>
         </Note>
       </Section>
+
+      <Takeaways
+        items={[
+          'A swaption is the right to enter a swap at a fixed rate agreed today. Payer = right to pay fixed (gains if rates rise); receiver = right to receive fixed (gains if rates fall).',
+          'The underlying is the forward swap rate: the fair fixed rate for the future swap, seen today.',
+          'Payoff = annuity × max(swap rate − K, 0) for a payer. Price = annuity × Black/Bachelier formula on the forward swap rate.',
+          'Payer − receiver = annuity × (S₀ − K). At the money they cost the same, and a straddle costs about 0.8 × A × σN × √T.',
+          'The market quotes swaptions as a grid of normal vols by expiry and swap length.',
+        ]}
+      />
 
       <Quiz
         questions={[

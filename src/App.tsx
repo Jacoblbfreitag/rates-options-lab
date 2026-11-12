@@ -5,6 +5,7 @@ import { Home } from './pages/Home';
 
 // Each lesson loads on demand, so the first page opens fast.
 const pages: Record<string, React.LazyExoticComponent<() => JSX.Element>> = {
+  start: lazy(() => import('./pages/StartHere')),
   foundations: lazy(() => import('./pages/Foundations')),
   curves: lazy(() => import('./pages/Curves')),
   caps: lazy(() => import('./pages/CapsFloors')),

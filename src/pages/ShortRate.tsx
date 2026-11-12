@@ -3,7 +3,7 @@ import type { Data } from 'plotly.js';
 import { Chart, line, linspace, palette } from '../components/Chart';
 import { Playground, Slider, Stats, Toggle, bp, num, pct } from '../components/Controls';
 import { Tex, TexBlock } from '../components/Formula';
-import { CodeRef, LessonFooter, LessonHeader, Note, Quiz, Section, TryThis } from '../components/Lesson';
+import { CodeRef, Example, InPlainWords, LessonFooter, LessonHeader, Note, Quiz, Section, Symbols, Takeaways, Term, TryThis } from '../components/Lesson';
 import { baseCurve } from '../data/curves';
 import { swaptionExpiries, swaptionNormalVolsBp, swaptionTenorLabels, swaptionTenors } from '../data/market';
 import { impliedNormalVol } from '../models/black76';
@@ -162,17 +162,36 @@ export default function ShortRate() {
       <LessonHeader id="short-rate" />
 
       <Section title="1. Vasicek: one random number drives the whole curve">
-        <p>
-          Modules 3–5 priced each option on its own forward, with its own vol. That cannot price products whose value depends on
-          how the <em>whole curve</em> evolves, such as Bermudans, callable bonds and path-dependent notes. A{' '}
-          <strong>term-structure model</strong> describes the dynamics of the entire curve. The simplest kind models only the
-          instantaneous short rate <Tex>r</Tex>:
-        </p>
+        <InPlainWords>
+          <p>
+            So far each option had its own little model: one forward rate, one volatility. That works for caps and swaptions on
+            their own, but some products depend on how the <em>whole curve</em> moves over time. The biggest example is the right
+            to cancel a loan or swap on several future dates (the Bermudan, section 4). For those we need one model that moves
+            the entire yield curve consistently: a <strong>term-structure model</strong>.
+          </p>
+          <p style={{ marginBottom: 0 }}>
+            The simplest approach models just one number, the <Term name="Short rate">short rate</Term> <Tex>r</Tex>: the
+            overnight interest rate, roughly the rate the central bank steers. If you know how <Tex>r</Tex> might evolve, you
+            know every bond price: a bond's price is the average, over all possible future paths of r, of the discounting along
+            each path. Every longer rate then follows from the short rate.
+          </p>
+        </InPlainWords>
         <TexBlock>{String.raw`dr = a\,(b - r)\,dt + \sigma\,dW \qquad\text{(Vasicek, 1977)}`}</TexBlock>
-        <p>
-          <Tex>a</Tex> is the <strong>mean-reversion speed</strong>, <Tex>b</Tex> the long-run level and <Tex>{String.raw`\sigma`}</Tex>{' '}
-          the normal vol. Bond prices follow as <Tex>{String.raw`P(0,T)=\mathbb{E}^Q[e^{-\int_0^T r\,dt}]`}</Tex>, which is available in closed form.
-        </p>
+        <Symbols
+          items={[
+            ['dr', 'The change in the short rate over a tiny time step dt'],
+            [String.raw`a\,(b - r)\,dt`, <>The <strong>predictable</strong> part: if r is above b it is pulled down, if below it is pulled up</>],
+            ['b', 'The long-run level that rates are pulled towards'],
+            ['a', <>The <Term name="Mean reversion">mean-reversion</Term> speed: how strong the pull is</>],
+            [String.raw`\sigma\,dW`, <>The <strong>random</strong> part: a normally distributed shock of size σ (in bp per year)</>],
+          ]}
+        />
+        <Example title="Mean reversion with numbers">
+          Say <Tex>a = 0.2</Tex>, <Tex>b = 4\%</Tex>, and today <Tex>r = 6\%</Tex>. The gap to the long-run level is 2%, so on
+          average the rate falls by about <Tex>{String.raw`0.2 \times 2\% = 0.4\%`}</Tex> over the next year, before any random
+          shock. The further away it is, the stronger the pull. It works like a rubber band, or like a central bank steering rates back
+          towards "normal". A mean-reversion speed of a means a gap closes with a half-life of about ln(2)/a years, here ≈ 3.5 years.
+        </Example>
         <Playground
           controls={
             <>
@@ -199,10 +218,31 @@ export default function ShortRate() {
 
       <Section title="2. Hull–White: fit today’s curve exactly">
         <TexBlock>{String.raw`dr = \big[\theta(t) - a\,r\big]\,dt + \sigma\,dW, \qquad r(t) = x(t) + \varphi(t),\quad \varphi(t) = f(0,t) + \frac{\sigma^2}{2a^2}\big(1-e^{-at}\big)^2`}</TexBlock>
+        <InPlainWords>
+          <p>
+            Vasicek's big problem (section 1): with only three constant parameters it cannot reproduce today's actual yield
+            curve. A model that misprices simple bonds is useless for pricing options on them, because you could not even hedge
+            with it.
+          </p>
+          <p style={{ marginBottom: 0 }}>
+            Hull and White (1990) fixed this by letting the target level change over time: <Tex>{String.raw`\theta(t)`}</Tex>{' '}
+            instead of a constant <Tex>b</Tex>. That one function is chosen so that the model reproduces <strong>every</strong>{' '}
+            discount factor on today's curve exactly. In effect the short rate moves randomly <em>around the forward curve</em> (the
+            dashed line in the left chart sits on top of the red forward curve). The two remaining parameters, <Tex>a</Tex> and{' '}
+            <Tex>{String.raw`\sigma`}</Tex>, are then chosen to match option prices.
+          </p>
+        </InPlainWords>
+        <Symbols
+          items={[
+            [String.raw`\theta(t)`, 'Time-dependent target, chosen so the model fits today’s yield curve exactly'],
+            ['x(t)', 'The random part: a mean-reverting process that starts at 0'],
+            [String.raw`\varphi(t)`, 'The deterministic part: the forward curve plus a small correction for convexity'],
+            ['f(0,t)', 'Today’s instantaneous forward rate for time t (module 2)'],
+          ]}
+        />
         <p>
-          Making the long-run level time-dependent, <Tex>{String.raw`\theta(t)`}</Tex>, adds enough freedom to reproduce every
-          discount factor on today's curve. The drift is chosen so the short rate fluctuates around the forward curve, plus a
-          small convexity correction. Then <Tex>a</Tex> and <Tex>{String.raw`\sigma`}</Tex> are left free to fit option prices.
+          The right-hand chart compares the option vols the model produces with the market's (from module 4). Press
+          "Calibrate" to choose σ so the model matches one market point. That is <Term name="Calibration">calibration</Term>.
         </p>
         <Playground
           controls={
@@ -241,19 +281,31 @@ export default function ShortRate() {
       </Section>
 
       <Section title="3. The trinomial tree">
-        <p>
-          For products with early exercise we need a lattice. Hull and White's tree discretises <Tex>x</Tex> on a grid with
-          spacing <Tex>{String.raw`\Delta r = \sigma\sqrt{3\Delta t}`}</Tex>. From each node the rate moves up, stays, or moves down,
-          with probabilities that match the mean and variance of the process. Two features make it special:
-        </p>
+        <InPlainWords>
+          <p>
+            You know <strong>game trees</strong> and <strong>backward induction</strong> from game theory: draw every possible
+            future, start at the end, and work backwards, choosing the best action at each decision point. Pricing options that
+            can be exercised early works exactly the same way.
+          </p>
+          <p style={{ marginBottom: 0 }}>
+            A <Term name="Trinomial tree">trinomial tree</Term> chops time into steps. At each step the interest rate can go{' '}
+            <strong>up, stay, or go down</strong>, with probabilities chosen so the tree matches the model's average and
+            volatility. Each dot (node) below is one possible state of the world. To value an option, you start at the last
+            date, where you know the payoff. You then step back, and at each node the value is the discounted probability-weighted
+            average of the three nodes it can move to. That is <Term name="Backward induction">backward induction</Term>.
+          </p>
+        </InPlainWords>
+        <p>Two special features of Hull and White's tree:</p>
         <ul>
           <li>
-            <strong>Mean reversion bends the branches</strong>: at the edge <Tex>{String.raw`|j| = j_{\max}`}</Tex>, nodes branch
-            inward, so the tree stops growing and stays finite.
+            <strong>Mean reversion bends the branches</strong>. At the top and bottom edges, nodes can only move back towards
+            the middle (very high rates are pulled down), so the tree stops growing wider. Try a higher a below: the tree
+            gets narrower.
           </li>
           <li>
-            <strong>Each time slice is shifted by α<sub>m</sub></strong>, solved by forward induction with Arrow–Debreu prices{' '}
-            <Tex>Q</Tex>, so the tree reprices every zero-coupon bond on today's curve.
+            <strong>Each column is shifted up or down</strong> so the tree reprices every bond on today's curve. To find the shift,
+            it uses <Term name="Arrow–Debreu price">Arrow–Debreu prices</Term> (the value today of €1 paid only if a particular node
+            is reached). Hover over a node to see its value.
           </li>
         </ul>
         <Playground
@@ -274,13 +326,25 @@ export default function ShortRate() {
       </Section>
 
       <Section title="4. Bermudan swaptions">
+        <InPlainWords>
+          <p>
+            A European swaption can be exercised on one date. A <Term name="Bermudan swaption">Bermudan swaption</Term> can be
+            exercised on <em>several</em> dates. (The name is a joke: Bermuda lies between Europe and America, and "American"
+            options can be exercised any day.) A "10NC2" receiver gives the right to start receiving a fixed rate until year 10,
+            and that right can be used once a year from year 2 ("non-call 2").
+          </p>
+          <p style={{ marginBottom: 0 }}>
+            Where do you meet these? A homeowner with a fixed-rate mortgage can usually repay early and refinance when rates
+            fall. That is an embedded option to choose <em>when</em>. Banks hedge the resulting risk with Bermudan swaptions.
+            Callable bonds work the same way.
+          </p>
+        </InPlainWords>
         <p>
-          A <strong>Bermudan</strong> can be exercised on every coupon date after a non-call period, into the remaining swap.
-          A "10NC2" receiver gives the right to receive fixed until year 10, exercisable each year from year 2. Its value is
-          at least that of the most valuable European it contains. The extra is the value of being able to <em>choose when</em> to exercise.
-        </p>
-        <p>
-          Backward induction on the tree does this: at each exercise date, value = <Tex>{String.raw`\max(\text{continuation}, \text{exercise})`}</Tex>.
+          On the tree, the price comes from backward induction. At each exercise date you compare "exercise now" with "wait"
+          (the value of keeping the option) and take the better one:{' '}
+          <Tex>{String.raw`V = \max(\text{exercise value}, \text{continuation value})`}</Tex>. A Bermudan is worth at least as
+          much as the best European inside it. The extra is the <Term name="Switch option">switch option</Term>: the value of
+          flexibility.
         </p>
         <Playground
           controls={
@@ -317,6 +381,16 @@ export default function ShortRate() {
           is why Bermudan desks care so much about mean reversion and why it is often marked from other instruments.
         </Note>
       </Section>
+
+      <Takeaways
+        items={[
+          'Term-structure models move the whole yield curve consistently, which is needed for products like Bermudans that depend on several future dates.',
+          'Short-rate models describe the overnight rate. Mean reversion pulls it back towards a target, like a central bank steering rates.',
+          'Vasicek cannot fit today’s curve. Hull–White adds a time-dependent target θ(t) and fits it exactly, leaving a and σ to match option prices.',
+          'A trinomial tree is a game tree for interest rates. Options are priced by backward induction, exactly as in game theory.',
+          'A Bermudan can be exercised on several dates. Its extra value over a European (the switch option) depends on mean reversion.',
+        ]}
+      />
 
       <Quiz
         questions={[

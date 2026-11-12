@@ -1,7 +1,9 @@
 /** Building blocks for lesson pages: sections, callouts, quizzes, code pointers. */
 import { useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { glossary } from '../data/glossary';
 import { lessons } from '../lessons';
+import { Tex } from './Formula';
 
 export function LessonHeader({ id, children }: { id: string; children?: ReactNode }) {
   const lesson = lessons.find((l) => l.id === id)!;
@@ -39,6 +41,90 @@ export function Note({ title = 'Note', children }: { title?: string; children: R
       <div className="callout-title">{title}</div>
       {children}
     </aside>
+  );
+}
+
+/** The intuition first, with no maths: what is going on and why anyone cares. */
+export function InPlainWords({ children }: { children: ReactNode }) {
+  return (
+    <aside className="callout plain">
+      <div className="callout-title">In plain words</div>
+      {children}
+    </aside>
+  );
+}
+
+/** A calculation walked through with concrete numbers. */
+export function Example({ title = 'Worked example', children }: { title?: string; children: ReactNode }) {
+  return (
+    <aside className="callout example">
+      <div className="callout-title">{title}</div>
+      {children}
+    </aside>
+  );
+}
+
+/** "What each symbol means" table to put right under a formula. */
+export function Symbols({ items }: { items: [string, ReactNode][] }) {
+  return (
+    <details className="symbols" open>
+      <summary>What each symbol means</summary>
+      <table>
+        <tbody>
+          {items.map(([tex, meaning]) => (
+            <tr key={tex}>
+              <td className="sym">
+                <Tex>{tex}</Tex>
+              </td>
+              <td>{meaning}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </details>
+  );
+}
+
+/** A short summary of the module's main ideas, before the quiz. */
+export function Takeaways({ items }: { items: ReactNode[] }) {
+  return (
+    <section className="section takeaways">
+      <h2>Key takeaways</h2>
+      <ul>
+        {items.map((it, i) => (
+          <li key={i}>{it}</li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/**
+ * A glossary term inside running text: hover (or tap) to see the definition,
+ * click to open it in the glossary. `name` must match a glossary term exactly.
+ */
+export function Term({ name, children }: { name: string; children?: ReactNode }) {
+  const entry = glossary.find((e) => e.term === name);
+  const navigate = useNavigate();
+  // Open the tooltip towards whichever side has room, so it never runs off-screen.
+  const [alignRight, setAlignRight] = useState(false);
+  if (!entry) return <>{children ?? name}</>;
+  return (
+    <span
+      className={`term-link ${alignRight ? 'tip-right' : ''}`}
+      onMouseEnter={(e) => setAlignRight(e.currentTarget.getBoundingClientRect().left > window.innerWidth / 2)}
+      onFocus={(e) => setAlignRight(e.currentTarget.getBoundingClientRect().left > window.innerWidth / 2)}
+      tabIndex={0}
+      role="link"
+      onClick={() => navigate('/glossary', { state: { q: entry.term } })}
+      onKeyDown={(e) => e.key === 'Enter' && navigate('/glossary', { state: { q: entry.term } })}
+    >
+      {children ?? name}
+      <span className="term-tip" role="tooltip">
+        <strong>{entry.term}</strong>
+        {entry.definition}
+      </span>
+    </span>
   );
 }
 

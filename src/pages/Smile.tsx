@@ -3,7 +3,7 @@ import type { Data } from 'plotly.js';
 import { Chart, line, linspace } from '../components/Chart';
 import { Playground, Slider, Toggle, bp, num, pct } from '../components/Controls';
 import { Tex, TexBlock } from '../components/Formula';
-import { CodeRef, LessonFooter, LessonHeader, Note, Quiz, Section, TryThis } from '../components/Lesson';
+import { CodeRef, Example, InPlainWords, LessonFooter, LessonHeader, Note, Quiz, Section, Symbols, Takeaways, Term, TryThis } from '../components/Lesson';
 import { baseCurve } from '../data/curves';
 import {
   smileExpiry,
@@ -98,12 +98,36 @@ export default function Smile() {
       <LessonHeader id="smile" />
 
       <Section title="1. One vol is not enough">
-        <p>
-          If the market believed Black-76, every strike would trade at the same implied vol. It does not. Below are quotes for a{' '}
-          {smileExpiry}Y × {smileTenor}Y swaption (forward swap rate {pct(F, 2)}). Low strikes, i.e. receivers that pay off when
-          rates fall, trade at much higher Black vols. Part of this is just the lognormal-vs-normal effect from module 3. The rest is genuine:
-          the market prices fatter tails than the model, plus a <strong>skew</strong> between low and high strikes.
-        </p>
+        <InPlainWords>
+          <p>
+            Black's formula assumes the rate has <em>one</em> volatility. If that were true, then after converting market prices
+            into implied vols (module 3), every strike would show the same number. Plotted against the strike, you would get a
+            flat line.
+          </p>
+          <p style={{ marginBottom: 0 }}>
+            The red dots below are (sample) market quotes for a {smileExpiry}Y × {smileTenor}Y swaption, whose forward swap rate is{' '}
+            {pct(F, 2)}. They are <strong>not</strong> flat. Options with low strikes, which pay off if rates fall a lot, trade at
+            much higher implied vols. The curve is called the <Term name="Volatility smile">volatility smile</Term> (or skew). It
+            tells you the market thinks big moves are more likely than the simple model says, so it charges more for protection
+            against them.
+          </p>
+        </InPlainWords>
+        <Chart
+          data={[
+            quoteTrace,
+            line([1.5, 5.5], [smileQuotes[4].vol * 100, smileQuotes[4].vol * 100], 'What Black-76 assumes: one vol for all strikes', {
+              line: { dash: 'dash', color: '#5f6b7a' },
+            }),
+          ]}
+          x="Strike (%)"
+          y="Implied Black vol (%)"
+          height={280}
+        />
+        <Example title="Implied vol as a price tag">
+          Traders talk about options in vols rather than euros, because a vol is comparable across strikes and maturities, much like
+          quoting a bond by its yield rather than its price. "The 2% receiver trades at 33 vol" means: plug 33% into Black's formula
+          and you get its market price. The smile is simply the list of these price tags across strikes.
+        </Example>
         <Note title="Why care?">
           A desk that sells a 2% receiver at the 3.5% ATM vol undersells it badly. Exotics (Bermudans, CMS products, range accruals)
           depend on the whole smile, so you need a model that interpolates and extrapolates it sensibly. That model is SABR.
@@ -111,12 +135,34 @@ export default function Smile() {
       </Section>
 
       <Section title="2. SABR: stochastic volatility for forwards">
+        <InPlainWords>
+          <p>
+            How do we build a model whose implied vols are not flat? The most popular answer in rates is{' '}
+            <Term name="SABR model">SABR</Term>. Its idea: <strong>volatility itself moves randomly</strong>. Markets have calm and
+            stormy periods, just as weather does. If vol can suddenly rise, extreme outcomes become more likely than in a
+            constant-vol world, and options far from the money become more valuable. That lifts the wings of the smile.
+          </p>
+          <p style={{ marginBottom: 0 }}>
+            SABR has one equation for the rate and one for its volatility. Hagan and co-authors (2002) found an approximate
+            formula that turns the model's four parameters into an implied vol for every strike. In practice you use SABR to draw a
+            smooth smile through the market quotes, then price with Black's formula at the vol SABR gives for each strike.
+          </p>
+        </InPlainWords>
         <TexBlock>{String.raw`dF = \alpha\,F^{\beta}\,dW_1, \qquad d\alpha = \nu\,\alpha\,dW_2, \qquad dW_1\,dW_2 = \rho\,dt`}</TexBlock>
+        <Symbols
+          items={[
+            ['F', 'The forward (swap) rate'],
+            [String.raw`\alpha`, <><strong>alpha</strong>: the current level of volatility, which mainly sets the height of the smile</>],
+            [String.raw`\beta`, <><strong>beta</strong>: between 0 and 1. Chooses between "normal-like" (0) and "lognormal-like" (1) behaviour</>],
+            [String.raw`\nu`, <><strong>nu</strong>: the <Term name="Vol of vol">vol of vol</Term>, i.e. how much volatility itself moves. It bends the wings up (curvature)</>],
+            [String.raw`\rho`, <><strong>rho</strong>: correlation between rate moves and vol moves. A negative value tilts the smile (skew)</>],
+            ['dW_1,\\ dW_2', 'The random shocks to the rate and to its vol'],
+          ]}
+        />
         <p>
-          The forward's volatility <Tex>{String.raw`\alpha`}</Tex> is itself random. Hagan et al. (2002) derived an approximate
-          Black vol <Tex>{String.raw`\sigma_B(K)`}</Tex> for each strike, so SABR is used as a smile <em>interpolator</em> that you still price with Black-76.
-          The controls below fix the ATM vol and back out <Tex>{String.raw`\alpha`}</Tex>, as traders do, so you can see each
-          parameter's pure shape effect:
+          The controls below fix the at-the-money vol and work out α automatically (as traders do), so each slider shows only
+          its effect on the <em>shape</em>. The right-hand chart shows the probability distribution of the future swap rate that the
+          smile implies. A smile is really a statement about which outcomes the market finds likely.
         </p>
         <Playground
           controls={
@@ -154,11 +200,13 @@ export default function Smile() {
       </Section>
 
       <Section title="3. Calibrating to the market">
-        <p>
-          In practice <Tex>{String.raw`\beta`}</Tex> is fixed by convention (desks commonly use 0, 0.5 or 1) and{' '}
-          <Tex>{String.raw`\alpha, \rho, \nu`}</Tex> are fitted by least squares to the quoted strikes. One reason for fixing β:
-          β and ρ both create skew, so the data can barely tell them apart.
-        </p>
+        <InPlainWords>
+          Calibrating means choosing the parameters so that the model curve passes as close as possible to the market dots.
+          It is the same <strong>least squares</strong> idea as fitting a regression line in econometrics: minimise the sum of
+          squared differences between model vols and market vols. By convention, β is fixed first (desks commonly use 0, 0.5 or 1),
+          and α, ρ and ν are fitted. β and ρ both tilt the smile, so the data can barely tell them apart, a bit like
+          multicollinearity in a regression.
+        </InPlainWords>
         <Playground
           controls={
             <>
@@ -207,22 +255,28 @@ export default function Smile() {
       </Section>
 
       <Section title="4. The backbone: what happens when rates move">
+        <InPlainWords>
+          Two SABR fits with different β can match <em>today's</em> quotes equally well. They disagree about{' '}
+          <em>tomorrow</em>: if rates rise, does the whole smile move with them, and how does the ATM vol change? This relationship is
+          called the <Term name="Backbone">backbone</Term>. It matters because a trader's hedge (the delta) depends on how vols
+          react when rates move. The chart shows the smile for the current forward and for forwards 1% higher and lower.
+        </InPlainWords>
+        <TexBlock>{String.raw`\sigma_{ATM} \approx \alpha / F^{1-\beta}`}</TexBlock>
         <p>
-          β matters for <strong>dynamics</strong> even though it barely changes today's fit. It controls how the ATM vol
-          moves when the forward moves (the "backbone"): <Tex>{String.raw`\sigma_{ATM} \approx \alpha / F^{1-\beta}`}</Tex>. With
-          β = 0 a rise in rates lowers the Black ATM vol (normal vol stays constant). With β = 1 the Black vol stays put. That
-          changes the hedge: the delta of a swaption depends on β.
+          With β = 0, a rise in rates <em>lowers</em> the Black ATM vol (the bp vol stays roughly constant). With β = 1 the Black vol stays
+          put.
         </p>
         <Chart data={backboneChart} x="Strike (%)" y="Black vol (%)" layout={{ yaxis: { range: [10, 60] } }} />
         <TryThis items={['Use the β slider in section 2 and watch how far apart the three smiles move here.']} />
       </Section>
 
       <Section title="5. The vol cube">
-        <p>
-          Put it together: the ATM grid from module 4 (expiry × tenor) plus a smile at every point gives a three-dimensional{' '}
-          <strong>vol cube</strong>. Below, each expiry's ATM normal vol comes from the grid, and the smile shape comes from the ρ,
-          ν and β in section 2 (shifted SABR, shift 2%). The vertical axis is in normal vol, the market's convention.
-        </p>
+        <InPlainWords>
+          Putting it all together: module 4 had one vol for each expiry and swap length. Each of those also has a whole smile across
+          strikes. Expiry × swap length × strike makes three dimensions, which is why traders call it the{' '}
+          <Term name="Vol cube">vol cube</Term>. Below, pick a swap length to see one "slice": for every expiry, the ATM vol comes
+          from the module-4 grid and the smile shape from the SABR sliders in section 2. The height is in normal (bp) vol.
+        </InPlainWords>
         <Toggle
           label="Underlying tenor"
           value={String(tenorIdx)}
@@ -254,6 +308,16 @@ export default function Smile() {
           Real desks calibrate a separate (ρ, ν) for every expiry × tenor point. Expiry labels: {swaptionExpiryLabels.join(', ')}.
         </p>
       </Section>
+
+      <Takeaways
+        items={[
+          'Market implied vols differ by strike: the smile or skew. The simple Black model, with one vol, cannot explain it.',
+          'Implied vol is a price tag: the vol that makes Black’s formula give the market price.',
+          'SABR makes volatility random. Its parameters each control one feature: α the level, ρ the tilt (skew), ν the curvature, β the backbone.',
+          'Calibration is least squares: choose parameters so the model smile passes through the market quotes.',
+          'A smile is a statement about probabilities: it implies a distribution for the future rate.',
+        ]}
+      />
 
       <Quiz
         questions={[
